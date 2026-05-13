@@ -7,8 +7,10 @@ local CELL_CHOICES = {
   {"5S", 5}, {"6S", 6}, {"8S", 8}, {"10S", 10}, {"12S", 12},
 }
 
+-- Ethos form.addChoiceField only accepts integer values; map IDs to chemistry names.
+local CHEMISTRY_NAMES = {"LiPo", "LiHV", "Li-Ion"}
 local CHEMISTRY_CHOICES = {
-  {"LiPo", "LiPo"}, {"LiHV", "LiHV"}, {"Li-Ion", "Li-Ion"},
+  {"LiPo", 1}, {"LiHV", 2}, {"Li-Ion", 3},
 }
 
 local AUDIO_CHOICES = {
@@ -21,7 +23,7 @@ local function create()
     -- config (persisted)
     source       = nil,
     cellChoice   = 0,
-    chemistry    = "LiPo",
+    chemistry    = 1,
     audioPeriod  = 30,
     -- runtime (not persisted)
     detector     = cells.new(),
@@ -58,7 +60,7 @@ end
 local function read(widget)
   widget.source      = storage.read("source")
   widget.cellChoice  = storage.read("cellChoice")  or 0
-  widget.chemistry   = storage.read("chemistry")   or "LiPo"
+  widget.chemistry   = storage.read("chemistry")   or 1
   widget.audioPeriod = storage.read("audioPeriod") or 30
 end
 

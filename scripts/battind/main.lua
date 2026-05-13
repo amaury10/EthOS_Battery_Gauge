@@ -72,13 +72,42 @@ local function write(widget)
 end
 
 local function wakeup(widget)
-  -- (filled in Task 5)
+  local v = nil
+  if widget.source then
+    v = widget.source:value()
+  end
+  widget.voltage = v
+
+  local chemName = CHEMISTRY_NAMES[widget.chemistry] or "LiPo"
+  local maxV = chemistry.maxVoltage[chemName] or 4.25
+
+  if widget.cellChoice and widget.cellChoice > 0 then
+    widget.cellCount = widget.cellChoice
+  else
+    widget.cellCount = cells.update(widget.detector, v, maxV)
+  end
+
+  if v and v > 0 and widget.cellCount then
+    local vPerCell = v / widget.cellCount
+    widget.pct = chemistry.percent(chemName, vPerCell)
+  else
+    widget.pct = nil
+  end
+
+  lcd.invalidate()
 end
 
 local function paint(widget)
   local w, h = lcd.getWindowSize()
   lcd.color(lcd.RGB(255, 255, 255))
-  lcd.drawText(4, 4, "BattInd (config only)", LEFT)
+
+  local vStr   = widget.voltage  and string.format("%.2f V", widget.voltage) or "-- V"
+  local pctStr = widget.pct      and string.format("%d%%", math.floor(widget.pct + 0.5)) or "-- %"
+  local cellStr= widget.cellCount and (widget.cellCount .. "S") or "--S"
+
+  lcd.drawText(4,   4, pctStr,  LEFT)
+  lcd.drawText(4,  30, vStr,    LEFT)
+  lcd.drawText(4,  56, cellStr, LEFT)
 end
 
 local function init()

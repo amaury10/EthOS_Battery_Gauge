@@ -94,6 +94,17 @@ local function wakeup(widget)
     widget.pct = nil
   end
 
+  -- Audio readout: skip if disabled, no telemetry, or before first interval since boot
+  local now = os.clock()
+  local period = widget.audioPeriod or 0
+  if period > 0
+      and widget.pct ~= nil
+      and (now - widget.bootTime) >= period
+      and (now - widget.lastAnnounce) >= period then
+    system.playNumber(math.floor(widget.pct + 0.5), UNIT_PERCENT)
+    widget.lastAnnounce = now
+  end
+
   lcd.invalidate()
 end
 

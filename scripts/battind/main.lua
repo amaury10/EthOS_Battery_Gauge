@@ -97,17 +97,79 @@ local function wakeup(widget)
   lcd.invalidate()
 end
 
+local COLOR_BG    = lcd.RGB(0,   0,   0)
+local COLOR_FG    = lcd.RGB(255, 255, 255)
+local COLOR_DIM   = lcd.RGB(120, 120, 120)
+local COLOR_GREEN = lcd.RGB( 60, 200,  60)
+local COLOR_AMBER = lcd.RGB(230, 170,   0)
+local COLOR_RED   = lcd.RGB(220,  40,  40)
+
+-- Defensive font helper: works whether or not lcd.font / FONT_* exist in this Ethos version
+local function setFont(f)
+  if type(lcd.font) == "function" and f ~= nil then
+    lcd.font(f)
+  end
+end
+
+local function gaugeColor(pct)
+  if pct == nil then return COLOR_DIM end
+  if pct >= 50 then return COLOR_GREEN end
+  if pct >= 20 then return COLOR_AMBER end
+  return COLOR_RED
+end
+
 local function paint(widget)
   local w, h = lcd.getWindowSize()
-  lcd.color(lcd.RGB(255, 255, 255))
+  lcd.color(COLOR_BG)
+  lcd.drawFilledRectangle(0, 0, w, h)
 
-  local vStr   = widget.voltage  and string.format("%.2f V", widget.voltage) or "-- V"
-  local pctStr = widget.pct      and string.format("%d%%", math.floor(widget.pct + 0.5)) or "-- %"
-  local cellStr= widget.cellCount and (widget.cellCount .. "S") or "--S"
+  local pctStr  = widget.pct      and string.format("%d%%",   math.floor(widget.pct + 0.5)) or "-- %"
+  local vStr    = widget.voltage  and string.format("%.2f V", widget.voltage)               or "-- V"
+  local cellStr = widget.cellCount and (widget.cellCount .. "S") or "--S"
 
-  lcd.drawText(4,   4, pctStr,  LEFT)
-  lcd.drawText(4,  30, vStr,    LEFT)
-  lcd.drawText(4,  56, cellStr, LEFT)
+  local compact = (w < 320)
+
+  if compact then
+    -- Compact layout (X-Lite S)
+    lcd.color(COLOR_FG)
+    setFont(FONT_L)
+    lcd.drawText(4, 2, pctStr, LEFT)
+    setFont(FONT_S)
+    lcd.drawText(w - 4, 6, cellStr .. "  " .. vStr, RIGHT)
+
+    local barW = w - 8
+    local barH = 12
+    local barX = 4
+    local barY = h - barH - 4
+    lcd.color(COLOR_DIM)
+    lcd.drawRectangle(barX, barY, barW, barH)
+    if widget.pct then
+      local fill = math.floor(barW * widget.pct / 100 + 0.5)
+      lcd.color(gaugeColor(widget.pct))
+      lcd.drawFilledRectangle(barX + 1, barY + 1, math.max(0, fill - 2), barH - 2)
+    end
+  else
+    -- Large layout (X18 and up)
+    lcd.color(COLOR_FG)
+    setFont(FONT_XL)
+    lcd.drawText(8, 4, pctStr, LEFT)
+    setFont(FONT_L)
+    lcd.drawText(w - 8, 4, vStr, RIGHT)
+    setFont(FONT_STD)
+    lcd.drawText(w - 8, 4 + 32, cellStr, RIGHT)
+
+    local barW = w - 16
+    local barH = 20
+    local barX = 8
+    local barY = h - barH - 8
+    lcd.color(COLOR_DIM)
+    lcd.drawRectangle(barX, barY, barW, barH)
+    if widget.pct then
+      local fill = math.floor(barW * widget.pct / 100 + 0.5)
+      lcd.color(gaugeColor(widget.pct))
+      lcd.drawFilledRectangle(barX + 2, barY + 2, math.max(0, fill - 4), barH - 4)
+    end
+  end
 end
 
 local function init()
